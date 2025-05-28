@@ -3,9 +3,10 @@ const fs = require('fs');
 const { Transform } = require('stream');
 const path = require('path');
 const { promisify } = require('util');
+const zlib = require('zlib');
 
 const collectionName = 'Recommendations';
-const outputFile = path.join(__dirname, 'grad-archival-db.Recommendations.json');
+const outputFile = path.join(__dirname, 'grad-archival-db.Recommendations.json.gz');
 const dbUri = 'mongodb+srv://grad-app-prod:N5pxJ8aART9FHcHW@gradright-cluster0-ab5bz.mongodb.net/grad-prod?retryWrites=true&w=majority';
 const BATCH_SIZE = 1000;
 
@@ -18,7 +19,9 @@ class JsonFormatter extends Transform {
 
     _transform(doc, encoding, callback) {
         try {
-            const jsonString = JSON.stringify(doc);
+            // Optionally, exclude fields like _id or others to reduce size
+            const { _id, ...leanDoc } = doc; // Remove _id if not needed
+            const jsonString = JSON.stringify(leanDoc);
             if (this.isFirst) {
                 this.push('[' + jsonString);
                 this.isFirst = false;
@@ -43,8 +46,8 @@ async function checkDiskSpace() {
     const stats = await stat(__dirname);
     const freeSpaceGB = (stats.bavail * stats.bsize) / (1024 * 1024 * 1024);
     console.log(`Available disk space: ${freeSpaceGB.toFixed(2)} GB`);
-    if (freeSpaceGB < 50) {
-        throw new Error('Insufficient disk space for export (minimum 50 GB required)');
+    if (freeSpaceGB < 10) {
+        throw new Error('Insufficient disk space for export (minimum 10 GB required)');
     }
 }
 
@@ -88,11 +91,11 @@ async function exportCollection() {
 
         let processedDocs = 0;
 
-        // Create a readable stream
-        const cursor = collection.find().batchSize(BATCH_SIZE).stream();
+        // Create a readable stream with projection to reduce fields (modify as needed)
+        const cursor = collection.find({}, { projection: { _id: 0 } }).batchSize(BATCH_SIZE).stream();
 
-        // Create write stream
-        const writeStream = fs.createWriteStream(outputFile, { encoding: 'utf8' });
+        // Create write stream with gzip compression
+        const writeStream = fs.createWriteStream(outputFile).pipe(zlib.createGzip());
 
         // Create JSON formatter
         const jsonFormatter = new JsonFormatter();
@@ -121,7 +124,7 @@ async function exportCollection() {
     } catch (err) {
         console.error('Error in export process:', err);
         if (clusterConnection) await clusterConnection.close();
-        process.exit(1); // Exit with error code for PM2 to detect failure
+        process.exit(1);
     }
 }
 
