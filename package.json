@@ -1,0 +1,30 @@
+{
+  "name": "grad-scripts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon ./src/server.js"
+  },
+  "keywords": [],
+  "author": "Abhishek Anshu",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "fs": "^0.0.1-security",
+    "fs-extra": "^11.2.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "moment-timezone": "^0.5.48",
+    "mongoose": "^8.7.2",
+    "nodemon": "^3.1.7",
+    "path": "^0.12.7",
+    "redis": "^4.7.0",
+    "url": "^0.11.4",
+    "uuid": "^11.0.3"
+  }
+}
